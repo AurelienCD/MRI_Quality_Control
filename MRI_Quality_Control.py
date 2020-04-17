@@ -317,7 +317,7 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     time2 = time.time()
     TimeForrunFunction = time2 - time1
     print("\n")
-    print(u"La fonction recalage s'est executée en " + str(TimeForrunFunction) +" secondes")
+    print(u"La fonction recalage s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
    
 
   def GeoDistorsion(self, inputSelectorCTImage, inputSelectorMaskImg, OutputDirectory):
@@ -445,19 +445,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     time2 = time.time()
     TimeForrunFunction = time2 - time1
     print("\n")
-    print(u"Le programme s'est executé en " + str(TimeForrunFunction) +" secondes")
-    print("\n")
-    print(u"Les résultats de l'analyse sont à retrouver dans le dossier : " + str(OutputDirectory.directory))
+    print(u"L'analyse de distorsion géométrique s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
     print("\n")
     print(u"Pour une représentation 3D des sphères et de la tolérance quant à la déformation géométrique observée, cliquez sur Show3D")
-    
-    time2 = time.time()
-    TimeForrunFunction = time2 - time1
-    print("\n")
-    print(u"La fonction distorsion géométrique s'est executée en " + str(TimeForrunFunction) +" secondes")
-    
-    os.startfile(savepath) # provoque l'ouverture du fichier résultat.txt ####fait buguer PC cyril?
-
 
   def GeoDistorsionShow3D(self, inputSelectorGeoDistorsionResult, OutputDirectory):
     ### Output : image 3D avec code couleur en fonction du fait que les sphères ont des déformations géométrique en dessus ou en dessous des valeurs de tolérance ####
@@ -558,11 +548,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     TimeForrunFunction = time2 - time1
 
     print("\n")
-    print(u"Le programme s'est executé en " + str(TimeForrunFunction) +" secondes")
+    print(u"La fonction de représentation 3D des sphères s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
     print("\n")
-    print(u"L'image 3D a été sauvée dans le dossier : " + str(OutputDirectory.directory))
-    print("\n")
-    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Cyril Jaudet au 5690")
+    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Cyril Jaudet au 5690 ou Aurélien Corroyer-Dulmont au 5768")
     print("\n")
     print(u"Si besoin d’aide ou d’informations sur comment fonctionne le programme : Cyril Jaudet (5690) ou Aurélien Corroyer-Dulmont (5768)")
 
@@ -605,6 +593,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     SNRInsidePhantom = float(Mean_Label_Of_Interest) / float(SDInside)
     SNROutsidePhantom = float(Mean_Label_Of_Interest) / float(SDOutside)
     
+    SNRInsidePhantom = SNRInsidePhantom/100
+    SNROutsidePhantom = SNROutsidePhantom/100
+
     ### Enoncé des résultats ###
     print("\n")
     print(u"Moyenne des labels :\nSphères : " + str(Mean_Label_Of_Interest) + u"  Intérieur du fantôme : " + str(MeanInside) + u"  Extérieur du fantôme : " + str(MeanOutside))
@@ -613,10 +604,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     print("\n")
     print(u"Ecart-type des labels :\nSphères : " + str(SD_Label_Of_Interest) + u"  Intérieur du fantôme : " + str(SDInside) + u"  Extérieur du fantôme : " + str(SDOutside))
     print("\n")
-    print(u"La valeur du SNR à l'intérieur du fantôme est de : " + str(SNRInsidePhantom))
+    print(u"La valeur du SNR à l'intérieur du fantôme est de : " + str(SNRInsidePhantom) + " %")
     print("\n")
-    print(u"La valeur du SNR à l'extérieur du fantôme est de : " + str(SNROutsidePhantom))
-    print("\n")
+    print(u"La valeur du SNR à l'extérieur du fantôme est de : " + str(SNROutsidePhantom) + " %")
 
     ### Ecriture des résultats dans le fichier d'analyse.csv ###
     f = open(savepath, 'a')
@@ -641,8 +631,6 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     TimeForrunFunction = time2 - time1
     print("\n")
     print(u"La fonction SNR s'est executée en " + str(TimeForrunFunction) +" secondes")
-
-    os.startfile(savepath) # provoque l'ouverture du fichier résultat.txt
 
 
 
