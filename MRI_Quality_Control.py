@@ -28,13 +28,65 @@ class MRI_Quality_Control(ScriptedLoadableModule):
     self.parent.title = "MRI Quality Control"
     self.parent.categories = ["Imaging"]
     self.parent.dependencies = []
-    self.parent.contributors = ["Cyril JAUDET PhD and Aurelien CORROYER-DULMONT PhD"]
+    self.parent.contributors = ["Aurelien CORROYER-DULMONT PhD and Cyril JAUDET PhD"]
     self.parent.helpText = u"Le mode opératoire de ce CQ est disponible dans : //s-grp/grp/RADIOPHY/Personnel/Aurélien Corroyer-Dulmont/"+str(3)+u"dSlicer/Mode Opératoire" ### A FAIRE ###
     self.parent.acknowledgementText = "Medical Physics department, Centre Francois Baclesse, CAEN, FRANCE."
 
 
+    # Additional initialization step after application startup is complete
+    slicer.app.connect("startupCompleted()", registerSampleData)
+
 #
-# MRIBasicQualityControlWidget
+# Register sample data sets in Sample Data module
+#
+
+def registerSampleData():
+  """
+  Add data sets to Sample Data module.
+  """
+  # It is always recommended to provide sample data for users to make it easy to try the module,
+  # but if no sample data is available then this method (and associated startupCompeted signal connection) can be removed.
+
+  import SampleData
+  iconsPath = os.path.join(os.path.dirname(__file__), 'Resources/Icons')
+
+  # To ensure that the source code repository remains small (can be downloaded and installed quickly)
+  # it is recommended to store data sets that are larger than a few MB in a Github release.
+
+  # MRI_Quality_Control1
+  SampleData.SampleDataLogic.registerCustomSampleDataSource(
+    # Category and sample name displayed in Sample Data module
+    category='MRI_Quality_Control',
+    sampleName='MRI_Quality_Control1',
+    # Thumbnail should have size of approximately 260x280 pixels and stored in Resources/Icons folder.
+    # It can be created by Screen Capture module, "Capture all views" option enabled, "Number of images" set to "Single".
+    thumbnailFileName=os.path.join(iconsPath, 'MRI_Quality_Control1.png'),
+    # Download URL and target file name
+    uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95",
+    fileNames='MRI_Quality_Control1.nrrd',
+    # Checksum to ensure file integrity. Can be computed by this command:
+    #  import hashlib; print(hashlib.sha256(open(filename, "rb").read()).hexdigest())
+    checksums = 'SHA256:998cb522173839c78657f4bc0ea907cea09fd04e44601f17c82ea27927937b95',
+    # This node name will be used when the data set is loaded
+    nodeNames='MRI_Quality_Control1'
+  )
+
+  # MRI_Quality_Control2
+  SampleData.SampleDataLogic.registerCustomSampleDataSource(
+    # Category and sample name displayed in Sample Data module
+    category='MRI_Quality_Control',
+    sampleName='MRI_Quality_Control2',
+    thumbnailFileName=os.path.join(iconsPath, 'MRI_Quality_Control2.png'),
+    # Download URL and target file name
+    uris="https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97",
+    fileNames='MRI_Quality_Control2.nrrd',
+    checksums = 'SHA256:1a64f3f422eb3d1c9b093d1a18da354b13bcf307907c66317e2463ee530b7a97',
+    # This node name will be used when the data set is loaded
+    nodeNames='MRI_Quality_Control2'
+  )
+
+#
+# MRI_Quality_ControlWidget
 #
 
 class MRI_Quality_ControlWidget(ScriptedLoadableModuleWidget):
@@ -703,4 +755,3 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     TimeForrunFunction = time2 - time1
     print("\n")
     print(u"La fonction Signal Linearity s'est executée en " + str(TimeForrunFunction) +" secondes")    
-
