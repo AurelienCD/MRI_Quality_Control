@@ -28,7 +28,7 @@ class MRI_Quality_Control(ScriptedLoadableModule):
     self.parent.title = "MRI Quality Control"
     self.parent.categories = ["Imaging"]
     self.parent.dependencies = []
-    self.parent.contributors = ["Cyril JAUDET PhD and Aurelien CORROYER-DULMONT PhD"]
+    self.parent.contributors = ["Aurelien CORROYER-DULMONT PhD and Cyril JAUDET PhD"]
     self.parent.helpText = u"Le mode opératoire de ce CQ est disponible dans : xxx/"+str(3)+u"dSlicer/Mode Opératoire"
     self.parent.acknowledgementText = "Medical Physics department, Centre Francois Baclesse, CAEN, FRANCE."
 
@@ -566,9 +566,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     print("\n")
     print(u"La fonction de représentation 3D des sphères s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
     print("\n")
-    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Cyril Jaudet au 5690 ou Aurélien Corroyer-Dulmont au 5768")
+    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Aurélien Corroyer-Dulmont (5768) ou Cyril Jaudet (5690)")
     print("\n")
-    print(u"Si besoin d’aide ou d’informations sur comment fonctionne le programme : Cyril Jaudet (5690) ou Aurélien Corroyer-Dulmont (5768)")
+    print(u"Si besoin d’aide ou d’informations sur comment fonctionne le programme : Aurélien Corroyer-Dulmont (5768) ou Cyril Jaudet (5690)")
 
   def SNR(self, inputSelectorMaskImg, OutputDirectory):
     #### Fonction servant à calculer la rapport signal sur bruit entre les sphères d'intérêt et le reste du fantôme ainsi que par rapport au bruit ###
