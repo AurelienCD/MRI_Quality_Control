@@ -17,6 +17,11 @@ import vtkSegmentationCorePython as vtkSegmentationCore
 
 date = datetime.datetime.now()
 
+
+## TO DO LIST ##
+## map de distorsion géométriue
+
+
 #
 # MRIBasicQualityControl
 #
@@ -29,7 +34,7 @@ class MRI_Quality_Control(ScriptedLoadableModule):
     self.parent.categories = ["Imaging"]
     self.parent.dependencies = []
     self.parent.contributors = ["Aurelien CORROYER-DULMONT PhD and Cyril JAUDET PhD"]
-    self.parent.helpText = u"Le mode opératoire de ce CQ est disponible dans : xxx/"+str(3)+u"dSlicer/Mode Opératoire"
+    self.parent.helpText = u"Le mode opératoire de ce CQ est disponible dans : //s-grp/grp/RADIOPHY/Personnel/Aurélien Corroyer-Dulmont/"+str(3)+u"dSlicer/Mode Opératoire" ### A FAIRE ###
     self.parent.acknowledgementText = "Medical Physics department, Centre Francois Baclesse, CAEN, FRANCE."
 
 
@@ -165,10 +170,20 @@ class MRI_Quality_ControlWidget(ScriptedLoadableModuleWidget):
     parametersFormLayout.addRow(self.SignalLinearityButton)
 
 
+    #
+    # Geometric Accuracy Button
+    #
+    self.GeometricAccuracyButton = qt.QPushButton("5) Geometric Accuracy analysis")
+    self.GeometricAccuracyButton.toolTip = "Run the analysis of different axes lenght in 3D."
+    self.GeometricAccuracyButton.enabled = True
+    parametersFormLayout.addRow(self.GeometricAccuracyButton)
+
+
     # connections
     self.RegistrationButton.connect('clicked(bool)', self.onRegistrationButton)
     self.SNRButton.connect('clicked(bool)', self.onSNRButton)
     self.SignalLinearityButton.connect('clicked(bool)', self.onSignalLinearityButton)
+    self.GeometricAccuracyButton.connect('clicked(bool)', self.onGeometricAccuracyButton)
     self.GeoDistorsionButton.connect('clicked(bool)', self.onGeoDistorsionButton)
     self.Show3DGeoDistorsionButton.connect('clicked(bool)', self.onShow3DGeoDistorsionButton)
     self.inputSelectorCTImage.connect("currentNodeChanged(vtkMRMLNode*)", self.onSelect)
@@ -192,6 +207,9 @@ class MRI_Quality_ControlWidget(ScriptedLoadableModuleWidget):
     self.Show3DGeoDistorsionButton.enabled = self.inputSelectorCTImage.currentNode()
     self.SNRButton.enabled = self.inputSelectorCTImage.currentNode() and self.inputSelectorMaskImg.currentNode() and self.inputSelectorMRImage.currentNode()
     self.SignalLinearityButton.enabled = self.inputSelectorCTImage.currentNode() and self.inputSelectorMaskImg.currentNode() and self.inputSelectorMRImage.currentNode()
+    self.GeometricAccuracyButton.enabled = self.inputSelectorCTImage.currentNode() and self.inputSelectorMaskImg.currentNode() and self.inputSelectorMRImage.currentNode()
+    self.inputSelectorGeoDistorsionResult.enabled = self.inputSelectorCTImage.currentNode() and self.inputSelectorMaskImg.currentNode() and self.inputSelectorMRImage.currentNode()
+
 
   def onRegistrationButton(self):
     logic = MRI_Quality_ControlLogic()
@@ -199,7 +217,8 @@ class MRI_Quality_ControlWidget(ScriptedLoadableModuleWidget):
 
   def onGeoDistorsionButton(self):
     logic2A = MRI_Quality_ControlLogic()
-    logic2A.GeoDistorsion(self.inputSelectorCTImage.currentNode(), self.inputSelectorMaskImg.currentNode(), self.OutputDirectory)
+    self.resultGeomDistoXYZ = []
+    self.resultGeomDistoXYZ = logic2A.GeoDistorsion(self.inputSelectorCTImage.currentNode(), self.inputSelectorMaskImg.currentNode(), self.OutputDirectory)
 
   def onShow3DGeoDistorsionButton(self):
     logic2B = MRI_Quality_ControlLogic()
@@ -212,6 +231,11 @@ class MRI_Quality_ControlWidget(ScriptedLoadableModuleWidget):
   def onSignalLinearityButton(self):
     logic4 = MRI_Quality_ControlLogic()
     logic4.SignalLinearity(self.inputSelectorMaskImg.currentNode(), self.OutputDirectory)
+
+
+  def onGeometricAccuracyButton(self):
+    logic5 = MRI_Quality_ControlLogic()
+    logic5.GeometricAccuracy(self.resultGeomDistoXYZ, self.OutputDirectory)
 
 
 #
@@ -357,10 +381,10 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
       NSpheresTolerance= np.zeros(3)
       image_distance=sitk.BinaryThreshold(LabelVolumeSphere_IRM, 500, 500, 0,0)
       for i in Nlabels:
-          if distance[i]<=1.0:
+          if distance[i]<=2.0:
               image_distance=Add.Execute(image_distance,sitk.BinaryThreshold(LabelVolumeSphere_IRM, i, i, 6,0))
               NSpheresTolerance[0]+=1
-          elif distance[i]<=2.0:
+          elif distance[i]<=3.0:
               image_distance=Add.Execute(image_distance,sitk.BinaryThreshold(LabelVolumeSphere_IRM, i, i, 13,0))
               NSpheresTolerance[1]+=1
           else :
@@ -393,7 +417,7 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     distance=np.zeros(max(Nlabels)+1)
     
     #############################test si le volume segmenter est cohérent (problème de fuite de solution...) sinon l'élinime:
-    ErreurSurVolume=0.5 # erreur inclusion de la segmentation de 50%
+    ErreurSurVolume=0.20 # erreur inclusion de la segmentation de 25%
     t=0
     list_label=list(Nlabels)
     for i in Nlabels:
@@ -402,7 +426,7 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
             t=t+1
 
     Nlabels=tuple(list_label)
-    print ("Nombre de sphere éléminées si Rspheres different de +/- 50%: ")
+    print ("Nombre de sphere éléminées si Rspheres different de +/- 25%: ")
     print( t )
 
     ###################################
@@ -436,7 +460,7 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
         f.write("\t")
         f.write(str(z_IRM))
         f.write("\t")
-        distance[i]=sqrt(((x_CT-x_IRM)*X_spacing)**2+((y_CT-y_IRM)*Y_spacing)**2+((z_CT-z_IRM)*Z_spacing)**2)
+        distance[i]=sqrt(((x_CT-x_IRM))**2+((y_CT-y_IRM))**2+((z_CT-z_IRM))**2)
         f.write(str(distance[i]))
         f.write("\n")                  
     print(u"Ecriture du fichier résultat ok")
@@ -445,17 +469,17 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     ResultatTolerance=DeformInColor(LabelVolumeSphere_IRM, distance, Nlabels)
     f.write("\n")
     f.write("\n")
-    f.write(str("N sphere <1mm \t N sphere <2mm \t N sphere >2mm "))
+    f.write(str("N sphere <2mm \t N sphere <3mm \t N sphere >3mm "))
     f.write("\n")
     f.write(str(ResultatTolerance[0])+"\t"+str(ResultatTolerance[1])+"\t"+str(ResultatTolerance[2]) ) 
     f.write("\n")
     f.write("\n")
     f.close()
-    print("N sphere <1mm:")
-    print(ResultatTolerance[0])
     print("N sphere <2mm:")
+    print(ResultatTolerance[0])
+    print("N sphere <3mm:")
     print(ResultatTolerance[1])
-    print("N sphere >2mm:")
+    print("N sphere >3mm:")
     print(ResultatTolerance[2])
     print("main : creation du label avec contrainte couleur ok")
     time2 = time.time()
@@ -464,6 +488,32 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     print(u"L'analyse de distorsion géométrique s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
     print("\n")
     print(u"Pour une représentation 3D des sphères et de la tolérance quant à la déformation géométrique observée, cliquez sur Show3D")
+
+
+    ### To get and return results for the Geometric accuracy test ###
+    list_label_Geo_Acc = [7,26,41,45,74,76,79,80,82,86,119,152]
+
+    x_IRM_Geo_Ac = []
+    y_IRM_Geo_Ac = []
+    z_IRM_Geo_Ac = []
+
+    for i in list_label_Geo_Acc:
+      x_IRM_Geo_Ac.append(stat_filter_IRM.GetCentroid(i)[0])
+      y_IRM_Geo_Ac.append(stat_filter_IRM.GetCentroid(i)[1])
+      z_IRM_Geo_Ac.append(stat_filter_IRM.GetCentroid(i)[2])
+
+    resultGeomDistoXYZ = []
+    for elm in x_IRM_Geo_Ac:
+      resultGeomDistoXYZ.append(elm)
+    for elm in y_IRM_Geo_Ac:
+      resultGeomDistoXYZ.append(elm)
+    for elm in z_IRM_Geo_Ac:
+      resultGeomDistoXYZ.append(elm)
+
+    #print(str(resultGeomDistoXYZ))
+    
+    return resultGeomDistoXYZ
+
 
   def GeoDistorsionShow3D(self, inputSelectorGeoDistorsionResult, OutputDirectory):
     ### Output : image 3D avec code couleur en fonction du fait que les sphères ont des déformations géométrique en dessus ou en dessous des valeurs de tolérance ####
@@ -566,9 +616,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     print("\n")
     print(u"La fonction de représentation 3D des sphères s'est bien executée (temps = " + str(TimeForrunFunction) +" secondes)")
     print("\n")
-    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Aurélien Corroyer-Dulmont (5768) ou Cyril Jaudet (5690)")
+    print(u"Si dans la représentation 3D des sphères sont de couleurs rouges, merci de prévenir Aurélien Corroyer-Dulmont au 5768 ou Cyril Jaudet au 5690")
     print("\n")
-    print(u"Si besoin d’aide ou d’informations sur comment fonctionne le programme : Aurélien Corroyer-Dulmont (5768) ou Cyril Jaudet (5690)")
+    print(u"Si besoin d’aide ou d’informations sur comment fonctionne le programme : Aurélien Corroyer-Dulmont au 5768 ou Cyril Jaudet au 5690")
 
   def SNR(self, inputSelectorMaskImg, OutputDirectory):
     #### Fonction servant à calculer la rapport signal sur bruit entre les sphères d'intérêt et le reste du fantôme ainsi que par rapport au bruit ###
@@ -608,9 +658,7 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
 
     SNRInsidePhantom = float(Mean_Label_Of_Interest) / float(SDInside)
     SNROutsidePhantom = float(Mean_Label_Of_Interest) / float(SDOutside)
-    
-    SNRInsidePhantom = SNRInsidePhantom/100
-    SNROutsidePhantom = SNROutsidePhantom/100
+
 
     ### Enoncé des résultats ###
     print("\n")
@@ -620,9 +668,9 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     print("\n")
     print(u"Ecart-type des labels :\nSphères : " + str(SD_Label_Of_Interest) + u"  Intérieur du fantôme : " + str(SDInside) + u"  Extérieur du fantôme : " + str(SDOutside))
     print("\n")
-    print(u"La valeur du SNR à l'intérieur du fantôme est de : " + str(SNRInsidePhantom) + " %")
+    print(u"La valeur du SNR à l'intérieur du fantôme est de : " + str(SNRInsidePhantom))
     print("\n")
-    print(u"La valeur du SNR à l'extérieur du fantôme est de : " + str(SNROutsidePhantom) + " %")
+    print(u"La valeur du SNR à l'extérieur du fantôme est de : " + str(SNROutsidePhantom))
 
     ### Ecriture des résultats dans le fichier d'analyse.csv ###
     f = open(savepath, 'a')
@@ -702,9 +750,68 @@ class MRI_Quality_ControlLogic(ScriptedLoadableModuleLogic):
     time2 = time.time()
     TimeForrunFunction = time2 - time1
     print("\n")
-    print(u"La fonction Signal Linearity s'est executée en " + str(TimeForrunFunction) +" secondes")    
-
-    ### Lance le fichier de suivi des CQ IRM
-    os.startfile('xxx')
+    print(u"La fonction Signal Linearity s'est executée en " + str(TimeForrunFunction) +" secondes\n\n")    
 
 
+
+
+  def GeometricAccuracy(self, resultGeomDistoXYZ, OutputDirectory):
+    ### Output : valeurs en mm de distance dans les 3D et en grand axe/petit axe et comparaison avec les valeurs connues selon la documentation du fantôme 3D ####
+    time1 = time.time()    
+
+    savepath = OutputDirectory.directory + "/Analyse_QC_MRI" + str(date.day) + str(date.month)  + str(date.year) + ".txt"
+
+    list_label_Geo_Acc = [7,26,41,45,74,76,79,80,82,86,119,152]
+
+    Axe_Lat_Int = (abs(resultGeomDistoXYZ[5])+abs(resultGeomDistoXYZ[8]))  ## valeur théorique = 80 mm
+    Axe_Lat_Ext = (abs(resultGeomDistoXYZ[4])+abs(resultGeomDistoXYZ[9]))  ## valeur théorique = 173 mm
+    Axe_AP_Int = (abs(resultGeomDistoXYZ[15])+abs(resultGeomDistoXYZ[22])) ## valeur théorique = 60 mm
+    Axe_AP_Ext = (abs(resultGeomDistoXYZ[12])+abs(resultGeomDistoXYZ[23]))  ## valeur théorique = 162.2 mm
+    Axe_DV_Int = (abs(resultGeomDistoXYZ[25])+abs(resultGeomDistoXYZ[26]))  ## valeur théorique = 59.1 mm 
+    Axe_DV_Ext = (abs(resultGeomDistoXYZ[30])+abs(resultGeomDistoXYZ[31]))  ## valeur théorique = 178.1 mm
+
+    diffAxe_Lat_Int = abs(Axe_Lat_Int-80)
+    diffAxe_Lat_Ext = abs(Axe_Lat_Ext-173)
+    diffAxe_AP_Int = abs(Axe_AP_Int-60)
+    diffAxe_AP_Ext = abs(Axe_AP_Ext-162.2)
+    diffAxe_DV_Int = abs(Axe_DV_Int-59.1)
+    diffAxe_DV_Ext = abs(Axe_DV_Ext-178.1)
+
+    print(u"Petit axe Lateral " + str(round(Axe_Lat_Int,3)) + u" mm / Valeur théorique = 80 mm    => différence = " + str(round(diffAxe_Lat_Int,3)) + " mm") 
+    print(u"Grand axe Lateral " + str(round(Axe_Lat_Ext,3)) + u" mm / Valeur théorique = 173 mm    => différence = " + str(round(diffAxe_Lat_Ext,3)) + " mm")      
+    print(u"Petit axe Ant-Post " + str(round(Axe_AP_Int,3)) + u" mm / Valeur théorique = 60 mm    => différence = " + str(round(diffAxe_AP_Int,3)) + " mm")     
+    print(u"Grand axe Ant-Post " + str(round(Axe_AP_Ext,3)) + u" mm / Valeur théorique = 162.2 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")      
+    print(u"Petit axe Dorsoventral " + str(round(Axe_DV_Int,3)) + u" mm / Valeur théorique = 59.1 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")      
+    print(u"Grand axe Dorsoventral " + str(round(Axe_DV_Ext,3)) + u" mm / Valeur théorique = 178.1 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")    
+
+    time2 = time.time()
+    TimeForrunFunction = time2 - time1
+    print("\n")
+    print(u"La fonction Geometric accuracy s'est executée en " + str(TimeForrunFunction) +" secondes")    
+
+
+    ### Ecriture des résultats dans le fichier d'analyse.txt ###
+    f = open(savepath, 'a')
+
+    ### encodage du fichier pour écriture incluant les "é" ###
+    f = codecs.open(savepath, "a", encoding='Latin-1')
+
+    f.write("\n\n\n")
+    f.write(u"Résultats de l'analyse de la constance géométrique :\n\n")
+    f.write(u"Petit axe Lateral " + str(round(Axe_Lat_Int,3)) + u" mm / Valeur théorique = 80 mm    => différence = " + str(round(diffAxe_Lat_Int,3)) + " mm")
+    f.write("\n\n")
+    f.write(u"Grand axe Lateral " + str(round(Axe_Lat_Ext,3)) + u" mm / Valeur théorique = 173 mm    => différence = " + str(round(diffAxe_Lat_Ext,3)) + " mm")
+    f.write("\n\n")
+    f.write(u"Petit axe Ant-Post " + str(round(Axe_AP_Int,3)) + u" mm / Valeur théorique = 60 mm    => différence = " + str(round(diffAxe_AP_Int,3)) + " mm")
+    f.write("\n\n")
+    f.write(u"Grand axe Ant-Post " + str(round(Axe_AP_Ext,3)) + u" mm / Valeur théorique = 162.2 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")
+    f.write("\n\n")
+    f.write(u"Petit axe Dorsoventral " + str(round(Axe_DV_Int,3)) + u" mm / Valeur théorique = 59.1 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")
+    f.write("\n\n")
+    f.write(u"Grand axe Dorsoventral " + str(round(Axe_DV_Ext,3)) + u" mm / Valeur théorique = 178.1 mm    => différence = " + str(round(diffAxe_DV_Ext,3)) + " mm")
+    f.close()
+
+    ### Lance les fichiers de suivi des CQ IRM
+    os.startfile('\\\\s-grp\\grp\\Imagerie\\CQ\\IRM\\CQ_mensuel_IRM_suivi.xlsx')
+    os.startfile('\\\\s-grp\\grp\\RADIOPHY\\NOUVELLE ARBORESENCE\\Imagerie\\CQ non-Obligatoires\\IRM\\Results_QC_MRI.xlsx')
+    os.startfile(savepath)
